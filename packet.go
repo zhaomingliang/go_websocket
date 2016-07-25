@@ -30,12 +30,14 @@ func EnPacket(p *Packet) (*bytes.Buffer, error) {
 	var a = p.FIN | p.RSV1 | p.RSV2 | p.RSV3 | p.OpCode
 
 	if e := b.WriteByte(a); e != nil {
+        
 		return nil, e
 	}
 
 	a = p.MASK | p.Len8
 
 	if e := b.WriteByte(a); e != nil {
+        
 		return nil, e
 	}
 
@@ -50,6 +52,7 @@ func EnPacket(p *Packet) (*bytes.Buffer, error) {
 	case p.Len8 == 126:
 
 		if e := binary.Write(b, binary.BigEndian, p.Len16); e != nil {
+            
 			return nil, e
 		}
 
@@ -58,6 +61,7 @@ func EnPacket(p *Packet) (*bytes.Buffer, error) {
 	case p.Len8 == 127:
 
 		if e := binary.Write(b, binary.BigEndian, p.Len64); e != nil {
+            
 			return nil, e
 		}
 
