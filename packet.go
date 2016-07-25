@@ -10,16 +10,27 @@ import (
 var WSErrorOutOfRange = errors.New("WS Error: Out of range, Len8(0 - 127)")
 
 type Packet struct {
+    
 	FIN      byte
+    
 	RSV1     byte
+    
 	RSV2     byte
+    
 	RSV3     byte
+    
 	OpCode   byte
+    
 	MASK     byte
+    
 	Len8     uint8
+    
 	Len16    uint16
+    
 	Len64    uint64
+    
 	MASK_KEY [4]byte
+    
 	Buffer   bytes.Buffer
 }
 
