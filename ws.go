@@ -26,7 +26,10 @@ func receive(rd io.Reader) (fr Frame, er error) {
 
 	fr.memory = make([]byte, 0x14)
 
-	io.ReadAtLeast(rd, fr.memory, 2)
+	if _, er = io.ReadAtLeast(rd, fr.memory, 2); er != nil {
+
+		return Frame{}, er
+	}
 
 	fr.fin = 0x80 & fr.memory[0]
 
@@ -48,23 +51,40 @@ func receive(rd io.Reader) (fr Frame, er error) {
 
 	case fr.u7 == 126:
 
-		binary.Read(rd, binary.BigEndian, &fr.u16)
+		if er = binary.Read(rd, binary.BigEndian, &fr.u16); er != nil {
+
+			break
+		}
 
 		fallthrough
 
 	case (fr.u7 > 0) && (fr.u7 <= 125):
 
-		binary.Read(rd, binary.BigEndian, &fr.masking)
+		if er = binary.Read(rd, binary.BigEndian, &fr.masking); er != nil {
+
+			break
+		}
 
 		fr.memory = make([]byte, (fr.u16 | uint16(fr.u7)>>fr.u16))
 
-		io.ReadFull(rd, fr.memory)
+		if _, er = io.ReadFull(rd, fr.memory); er != nil {
+
+			break
+		}
+
+		return fr, nil
 
 	case fr.u7 == 127:
 
-		binary.Read(rd, binary.BigEndian, &fr.u64)
+		if er = binary.Read(rd, binary.BigEndian, &fr.u64); er != nil {
 
-		binary.Read(rd, binary.BigEndian, &fr.masking)
+			break
+		}
+
+		if er = binary.Read(rd, binary.BigEndian, &fr.masking); er != nil {
+
+			break
+		}
 
 		const SIZE uint64 = 32 * 1024 * 1024 * 1024
 
@@ -90,9 +110,15 @@ func receive(rd io.Reader) (fr Frame, er error) {
 					f = g % f
 				}
 
-				io.ReadFull(rd, buf[:int(f)])
+				if _, er = io.ReadFull(rd, buf[:int(f)]); er != nil {
 
-				fr.disk[i].WriteAt(buf[:int(f)], int64(e))
+					continue
+				}
+
+				if _, er = fr.disk[i].WriteAt(buf[:int(f)], int64(e)); er != nil {
+
+					continue
+				}
 			}
 
 			i++
@@ -110,10 +136,11 @@ func receive(rd io.Reader) (fr Frame, er error) {
 				}
 			}
 
-			fr = Frame{}
+			break
 		}
 
+		return fr, nil
 	}
 
-	return fr, er
+	return Frame{}, er
 }
