@@ -126,7 +126,7 @@ func receive(rd io.Reader) (fr Frame, er error) {
 
 		if er != nil {
 
-			for i, f := range fr.disk {
+			for _, f := range fr.disk {
 
 				if f != nil {
 
