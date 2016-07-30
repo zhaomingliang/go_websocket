@@ -101,11 +101,13 @@ func receive(rd io.Reader) (fr Frame, er error) {
 
 		if er != nil {
 
-			for i, v := range fr.disk {
+			for i, f := range fr.disk {
 
-				if v != nil {
+				if f != nil {
 
-					v.Close()
+					f.Close()
+                    
+                    os.Remove(f.Name())
 				}
 			}
 
