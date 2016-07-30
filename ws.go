@@ -106,8 +106,8 @@ func receive(rd io.Reader) (fr Frame, er error) {
 				if f != nil {
 
 					f.Close()
-                    
-                    os.Remove(f.Name())
+
+					os.Remove(f.Name())
 				}
 			}
 
