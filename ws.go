@@ -80,7 +80,7 @@ func receive(rd io.Reader) (fr Frame, er error) {
 				b = c % b
 			}
 
-			n := fmt.Sprintf("%08x:%d", &fr.disk[i], i)
+			n := fmt.Sprintf("%s/%08x%08x", os.TempDir(), &fr.disk[i], i)
 
 			fr.disk[i], er = os.OpenFile(n, 705, os.ModeTemporary|os.ModeSticky)
 
