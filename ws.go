@@ -112,12 +112,12 @@ func receive(rd io.Reader) (fr Frame, er error) {
 
 				if _, er = io.ReadFull(rd, buf[:int(f)]); er != nil {
 
-					continue
+					break
 				}
 
 				if _, er = fr.disk[i].WriteAt(buf[:int(f)], int64(e)); er != nil {
 
-					continue
+					break
 				}
 			}
 
