@@ -107,7 +107,7 @@ func receive(rd io.Reader) (fr Frame, er error) {
 
 					f.Close()
                     
-    				os.Remove(f.Name())
+                    os.Remove(f.Name())
 				}
 			}
 
