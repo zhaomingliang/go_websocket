@@ -73,7 +73,7 @@ func receive(rd io.Reader) (fr Frame, er error) {
 
 		fr.disk = make([]*os.File, fr.u64/SIZE)
 
-		for i, a, b, c := 0, 0, SIZE, fr.u64; (a < c) && (err == nil); a += b {
+		for i, a, b, c := 0, 0, SIZE, fr.u64; (a < c) && (er == nil); a += b {
 
 			if (((c - a) / b) == 0) && ((c % b) > 0) {
 
@@ -82,9 +82,9 @@ func receive(rd io.Reader) (fr Frame, er error) {
 
 			n := fmt.Sprintf("%08x:%d", &fr.disk[i], i)
 
-			fr.disk[i] = os.OpenFile(n, 705, os.ModeTemporary|os.ModeSticky)
+			fr.disk[i], er = os.OpenFile(n, 705, os.ModeTemporary|os.ModeSticky)
 
-			for e, f, g := 0, len(buf), b; (e < g) && (err == nil); e += f {
+			for e, f, g := 0, len(buf), b; (e < g) && (er == nil); e += f {
 
 				if (((g - e) / f) == 0) && ((g % f) > 0) {
 
