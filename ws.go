@@ -24,9 +24,9 @@ type Frame struct {
 
 func receive(rd io.Reader) (fr Frame, er error) {
 
-	fr.memory = make([]byte, 0x14)
+	fr.memory = make([]byte, 0x10000)
 
-	if _, er = io.ReadAtLeast(rd, fr.memory, 2); er != nil {
+	if _, er = io.ReadFull(rd, fr.memory[:2]); er != nil {
 
 		return Frame{}, er
 	}
@@ -65,7 +65,7 @@ func receive(rd io.Reader) (fr Frame, er error) {
 			break
 		}
 
-		fr.memory = make([]byte, (fr.u16 | uint16(fr.u7)>>fr.u16))
+		fr.memory = fr.memory[:(fr.u16 | uint16(fr.u7)>>fr.u16)]
 
 		if _, er = io.ReadFull(rd, fr.memory); er != nil {
 
@@ -88,8 +88,6 @@ func receive(rd io.Reader) (fr Frame, er error) {
 
 		const SIZE uint64 = 32 * 1024 * 1024 * 1024
 
-		var buf = make([]byte, 0x10000)
-
 		fr.disk = make([]*os.File, fr.u64/SIZE)
 
 		for i, a, b, c := 0, uint64(0), SIZE, fr.u64; (a < c) && (er == nil); a += b {
@@ -103,19 +101,19 @@ func receive(rd io.Reader) (fr Frame, er error) {
 
 			fr.disk[i], er = os.OpenFile(n, 705, os.ModeTemporary|os.ModeSticky)
 
-			for e, f, g := uint64(0), uint64(len(buf)), b; (e < g) && (er == nil); e += f {
+			for e, f, g := uint64(0), uint64(len(fr.memory)), b; (e < g) && (er == nil); e += f {
 
 				if (((g - e) / f) == 0) && ((g % f) > 0) {
 
 					f = g % f
 				}
 
-				if _, er = io.ReadFull(rd, buf[:int(f)]); er != nil {
+				if _, er = io.ReadFull(rd, fr.memory[:int(f)]); er != nil {
 
 					break
 				}
 
-				if _, er = fr.disk[i].WriteAt(buf[:int(f)], int64(e)); er != nil {
+				if _, er = fr.disk[i].WriteAt(fr.memory[:int(f)], int64(e)); er != nil {
 
 					break
 				}
