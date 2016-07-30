@@ -4,7 +4,6 @@ import (
     "encoding/binary"
 	"fmt"
 	"io"
-	"net"
 	"os"
 )
 
@@ -67,13 +66,13 @@ func receive(rd io.Reader) (fr Frame, er error) {
 
 		binary.Read(rd, binary.BigEndian, &fr.masking)
 
-		const SIZE = 32 * 1024 * 1024 * 1024
+		const SIZE uint64 = 32 * 1024 * 1024 * 1024
 
 		var buf = make([]byte, 0x10000)
 
 		fr.disk = make([]*os.File, fr.u64/SIZE)
 
-		for i, a, b, c := 0, 0, SIZE, fr.u64; (a < c) && (er == nil); a += b {
+		for i, a, b, c := 0, uint64(0), SIZE, fr.u64; (a < c) && (er == nil); a += b {
 
 			if (((c - a) / b) == 0) && ((c % b) > 0) {
 
@@ -84,16 +83,16 @@ func receive(rd io.Reader) (fr Frame, er error) {
 
 			fr.disk[i], er = os.OpenFile(n, 705, os.ModeTemporary|os.ModeSticky)
 
-			for e, f, g := 0, len(buf), b; (e < g) && (er == nil); e += f {
+			for e, f, g := uint64(0), uint64(len(buf)), b; (e < g) && (er == nil); e += f {
 
 				if (((g - e) / f) == 0) && ((g % f) > 0) {
 
 					f = g % f
 				}
 
-				io.ReadFull(rd, buf[:f])
+				io.ReadFull(rd, buf[:int(f)])
 
-				fr.disk[i].WriteAt(buf[:f], e)
+				fr.disk[i].WriteAt(buf[:int(f)], int64(e))
 			}
 
 			i++
