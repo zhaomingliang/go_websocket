@@ -71,6 +71,11 @@ func receive(rd io.Reader) (fr Frame, er error) {
 
 			break
 		}
+        
+        for i, v := range fr.memory {
+    		
+			fr.memory[i] = v ^ fr.masking[i % 4]
+		}
 
 		return fr, nil
 
@@ -112,6 +117,11 @@ func receive(rd io.Reader) (fr Frame, er error) {
 
 					break
 				}
+                
+                for i, v := range fr.memory[:int(f)] {
+                    
+                    fr.memory[i] = v ^ fr.masking[i % 4]
+                }
 
 				if _, er = fr.disk[i].WriteAt(fr.memory[:int(f)], int64(e)); er != nil {
 
