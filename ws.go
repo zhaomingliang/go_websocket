@@ -131,6 +131,8 @@ func receive(rd io.Reader) (fr Frame, er error) {
 
 			i++
 		}
+        
+        fr.memory = nil
 
 		if er != nil {
 
