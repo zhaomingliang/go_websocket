@@ -71,10 +71,10 @@ func receive(rd io.Reader) (fr Frame, er error) {
 
 			break
 		}
-        
-        for i, v := range fr.memory {
-    		
-			fr.memory[i] = v ^ fr.masking[i % 4]
+
+		for i, v := range fr.memory {
+
+			fr.memory[i] = v ^ fr.masking[i%4]
 		}
 
 		return fr, nil
@@ -93,7 +93,7 @@ func receive(rd io.Reader) (fr Frame, er error) {
 
 		const SIZE uint64 = 32 * 1024 * 1024 * 1024
 
-		fr.disk = make([]*os.File, (fr.u64/SIZE)+((fr.u64%SIZE)|1>>(fr.u64%SIZE)))
+		fr.disk = make([]*os.File, (fr.u64/SIZE)+(1^1>>fr.u64%SIZE))
 
 		for i, a, b, c := 0, uint64(0), SIZE, fr.u64; (a < c) && (er == nil); a += b {
 
@@ -117,11 +117,11 @@ func receive(rd io.Reader) (fr Frame, er error) {
 
 					break
 				}
-                
-                for i, v := range fr.memory[:int(f)] {
-                    
-                    fr.memory[i] = v ^ fr.masking[i % 4]
-                }
+
+				for i, v := range fr.memory[:int(f)] {
+
+					fr.memory[i] = v ^ fr.masking[i%4]
+				}
 
 				if _, er = fr.disk[i].WriteAt(fr.memory[:int(f)], int64(e)); er != nil {
 
