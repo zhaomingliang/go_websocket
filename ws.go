@@ -104,7 +104,7 @@ func receive(rd io.Reader) (fr Frame, er error) {
 
 			n := fmt.Sprintf("%s/%08x%08x", os.TempDir(), &fr.disk[i], i)
 
-			fr.disk[i], er = os.OpenFile(n, 705, os.ModeTemporary|os.ModeSticky)
+			fr.disk[i], er = os.OpenFile(n, 706, os.ModeTemporary|os.ModeSticky)
 
 			for e, f, g := uint64(0), uint64(len(fr.memory)), b; (e < g) && (er == nil); e += f {
 
@@ -120,7 +120,7 @@ func receive(rd io.Reader) (fr Frame, er error) {
 
 				for i, v := range fr.memory[:int(f)] {
 
-					fr.memory[i] = v ^ fr.masking[i%4]
+					fr.memory[i] = v ^ fr.masking[int(a+e+uint64(i))%4]
 				}
 
 				if _, er = fr.disk[i].WriteAt(fr.memory[:int(f)], int64(e)); er != nil {
