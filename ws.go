@@ -47,8 +47,6 @@ func receive(rd io.Reader) (fr Frame, er error) {
 
 	switch {
 
-	case fr.u7 == 0:
-
 	case fr.u7 == 126:
 
 		if er = binary.Read(rd, binary.BigEndian, &fr.u16); er != nil {
@@ -76,6 +74,10 @@ func receive(rd io.Reader) (fr Frame, er error) {
 
 			fr.memory[i] = v ^ fr.masking[i%4]
 		}
+
+		fallthrough
+
+	case fr.u7 == 0:
 
 		return fr, nil
 
