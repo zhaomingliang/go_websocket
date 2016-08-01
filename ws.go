@@ -145,8 +145,8 @@ func receive(rd io.Reader) (fr Frame, er error) {
 					os.Remove(f.Name())
 				}
 			}
-            
-            fr.disk = nil
+
+			fr.disk = nil
 
 			break
 		}
