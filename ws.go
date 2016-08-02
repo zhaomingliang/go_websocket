@@ -158,3 +158,91 @@ func receive(rd io.Reader) (fr Frame, er error) {
 
 	return Frame{}, er
 }
+
+func (fr *Frame) GetFin() bool {
+
+    return fr.fin&0x80 > 0
+}
+
+func (fr *Frame) SetFin(bl int) {
+
+	fr.fin = (1 ^ 1>>uint(bl)) << 7 & 0x80
+}
+
+func (fr *Frame) GetRsv1() bool {
+
+	return fr.fin&0x40 > 0
+}
+
+func (fr *Frame) GetRsv2() bool {
+
+	return fr.fin&0x20 > 0
+}
+
+func (fr *Frame) GetRsv3() bool {
+
+	return fr.fin&0x10 > 0
+}
+
+func (fr *Frame) SetRsv1(bl int) {
+
+	fr.rsv1 = (1 ^ 1>>uint(bl)) << 6 & 0x40
+}
+
+func (fr *Frame) SetRsv2(bl int) {
+
+	fr.rsv2 = (1 ^ 1>>uint(bl)) << 5 & 0x20
+}
+
+func (fr *Frame) SetRsv3(bl int) {
+
+	fr.rsv3 = (1 ^ 1>>uint(bl)) << 4 & 0x10
+}
+
+func (fr *Frame) GetOpcode() int {
+
+	return int(fr.opcode & 0x0F)
+}
+
+func (fr *Frame) SetOpcode(op int) {
+
+	fr.opcode = byte(op & 0x0F)
+}
+
+func (fr *Frame) IsMask() bool {
+
+	return fr.masked&0x80 > 0
+}
+
+func (fr *Frame) GetMask() [4]byte {
+
+	return fr.masking
+}
+
+func (fr *Frame) SetMask(mk ...byte) {
+
+	for i, v := range mk[:4] {
+
+		fr.masking[i] = v
+	}
+}
+
+func (fr *Frame) GetLength() uint64 {
+
+	switch {
+
+	case fr.u7 > 0 && fr.u7 <= 125:
+
+		return uint64(fr.u7)
+
+	case fr.u7 == 126:
+
+		return uint64(fr.u16)
+
+	case fr.u7 == 127:
+
+		return fr.u64
+	}
+
+	return 0
+}
