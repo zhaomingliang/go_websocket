@@ -245,7 +245,7 @@ func (fr *Frame) GetFin() bool {
 
 func (fr *Frame) SetFin(bl int) {
 
-	fr.fin = (1 ^ 1>>uint(bl)) << 7 & 0x80
+	fr.fin = (1 ^ 1>>uint(bl)) << 7
 }
 
 func (fr *Frame) GetRsv1() bool {
@@ -265,17 +265,17 @@ func (fr *Frame) GetRsv3() bool {
 
 func (fr *Frame) SetRsv1(bl int) {
 
-	fr.rsv1 = (1 ^ 1>>uint(bl)) << 6 & 0x40
+	fr.rsv1 = (1 ^ 1>>uint(bl)) << 6
 }
 
 func (fr *Frame) SetRsv2(bl int) {
 
-	fr.rsv2 = (1 ^ 1>>uint(bl)) << 5 & 0x20
+	fr.rsv2 = (1 ^ 1>>uint(bl)) << 5
 }
 
 func (fr *Frame) SetRsv3(bl int) {
 
-	fr.rsv3 = (1 ^ 1>>uint(bl)) << 4 & 0x10
+	fr.rsv3 = (1 ^ 1>>uint(bl)) << 4
 }
 
 func (fr *Frame) GetOpcode() int {
