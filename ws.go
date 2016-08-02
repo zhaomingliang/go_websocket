@@ -22,7 +22,7 @@ type Frame struct {
 	disk    []*os.File
 }
 
-func receive(rd io.Reader) (fr Frame, er error) {
+func Recv(rd io.Reader) (fr Frame, er error) {
 
 	fr.memory = make([]byte, 0x10000)
 
@@ -157,6 +157,62 @@ func receive(rd io.Reader) (fr Frame, er error) {
 	}
 
 	return Frame{}, er
+}
+
+func Send(wr io.Writer, fr Frame) (er error) {
+
+    var bf bytes.Buffer
+
+	if er = bf.WriteByte(fr.fin | fr.rsv1 | fr.rsv2 | fr.rsv3 | fr.opcode); er != nil {
+
+		return er
+	}
+
+	if er = bf.WriteByte(fr.masked | fr.u7); er != nil {
+
+		return er
+	}
+
+	if _, er = bf.WriteTo(wr); er != nil {
+
+		return er
+	}
+
+	bf.Truncate(0)
+
+	switch {
+
+	case fr.u7 == 126:
+
+		binary.Write(wr, binary.BigEndian, fr.u16)
+
+		fallthrough
+
+	case (fr.u7 > 0) && (fr.u7 <= 125):
+
+		if _, er = wr.Write(fr.memory); er != nil {
+
+			return er
+		}
+
+		fallthrough
+
+	case fr.u7 == 0:
+
+		return nil
+
+	case fr.u7 == 127:
+
+		for _, v := range fr.disk {
+
+			if _, er = io.Copy(wr, v); er != nil {
+
+				break
+			}
+		}
+	}
+
+	return er
 }
 
 func (fr *Frame) GetFin() bool {
