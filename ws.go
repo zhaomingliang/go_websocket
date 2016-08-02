@@ -215,6 +215,13 @@ func Send(wr io.Writer, fr *Frame) (er error) {
 				break
 			}
 		}
+
+		if er != nil {
+
+			break
+		}
+
+		return nil
 	}
 
 	return er
