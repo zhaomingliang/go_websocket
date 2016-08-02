@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"bytes"
 )
 
 type Frame struct {
@@ -161,7 +162,7 @@ func Recv(rd io.Reader) (fr Frame, er error) {
 
 func Send(wr io.Writer, fr Frame) (er error) {
 
-    var bf bytes.Buffer
+	var bf bytes.Buffer
 
 	if er = bf.WriteByte(fr.fin | fr.rsv1 | fr.rsv2 | fr.rsv3 | fr.opcode); er != nil {
 
@@ -203,6 +204,8 @@ func Send(wr io.Writer, fr Frame) (er error) {
 
 	case fr.u7 == 127:
 
+		binary.Write(wr, binary.BigEndian, fr.u64)
+
 		for _, v := range fr.disk {
 
 			if _, er = io.Copy(wr, v); er != nil {
@@ -217,7 +220,7 @@ func Send(wr io.Writer, fr Frame) (er error) {
 
 func (fr *Frame) GetFin() bool {
 
-    return fr.fin&0x80 > 0
+	return fr.fin&0x80 > 0
 }
 
 func (fr *Frame) SetFin(bl int) {
