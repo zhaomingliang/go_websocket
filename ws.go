@@ -3,10 +3,13 @@ package websocket
 import (
     "bytes"
 	"encoding/binary"
+	"errors"
 	"fmt"
 	"io"
 	"os"
 )
+
+var WSErrOR = errors.New("websocket error: index out of range(0 - 127)")
 
 type Frame struct {
 	fin     byte
@@ -157,6 +160,10 @@ func Recv(rd io.Reader) (fr *Frame, er error) {
 		}
 
 		return fr, nil
+
+	default:
+
+		er = WSErrOR
 	}
 
 	return nil, er
@@ -222,6 +229,10 @@ func Send(wr io.Writer, fr *Frame) (er error) {
 		}
 
 		return nil
+
+	default:
+
+		er = WSErrOR
 	}
 
 	return er
