@@ -1,11 +1,11 @@
 package websocket
 
 import (
-    "encoding/binary"
+    "bytes"
+	"encoding/binary"
 	"fmt"
 	"io"
 	"os"
-	"bytes"
 )
 
 type Frame struct {
@@ -23,13 +23,15 @@ type Frame struct {
 	disk    []*os.File
 }
 
-func Recv(rd io.Reader) (fr Frame, er error) {
+func Recv(rd io.Reader) (fr *Frame, er error) {
+
+	fr = new(Frame)
 
 	fr.memory = make([]byte, 0x10000)
 
 	if _, er = io.ReadFull(rd, fr.memory[:2]); er != nil {
 
-		return Frame{}, er
+		return nil, er
 	}
 
 	fr.fin = 0x80 & fr.memory[0]
@@ -157,10 +159,10 @@ func Recv(rd io.Reader) (fr Frame, er error) {
 		return fr, nil
 	}
 
-	return Frame{}, er
+	return nil, er
 }
 
-func Send(wr io.Writer, fr Frame) (er error) {
+func Send(wr io.Writer, fr *Frame) (er error) {
 
 	var bf bytes.Buffer
 
@@ -279,6 +281,8 @@ func (fr *Frame) GetMask() [4]byte {
 }
 
 func (fr *Frame) SetMask(mk ...byte) {
+
+	fr.masked = 0x80
 
 	for i, v := range mk[:4] {
 
