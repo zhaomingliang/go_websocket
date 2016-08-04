@@ -4,7 +4,6 @@ import (
     "bufio"
 	"crypto/sha1"
 	"encoding/base64"
-	"errors"
 	"io"
 	"log"
 	"net"
@@ -32,7 +31,7 @@ type Service struct {
 	Log *log.Logger
 }
 
-func (sv *Service) Handshake(conn net.Conn, log *log.Logger) {
+func Handshake(conn net.Conn, log *log.Logger) {
 
 	var res http.Response
 
