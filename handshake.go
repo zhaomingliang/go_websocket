@@ -82,9 +82,9 @@ func Handshake(conn net.Conn, log *log.Logger) {
 		goto fail
 	}
 
-	//除错: HTTP (版本 >= 1.1)
+	//除错: 方法 GET && HTTP (版本 >= 1.1)
 
-	if !req.ProtoAtLeast(1, 1) {
+	if req.Method == "GET" && !req.ProtoAtLeast(1, 1) {
 
 		log.Printf("WebSocket: 请求的HTTP版本低于 1.1, 为 %d.%d\n", req.ProtoMajor, req.ProtoMinor)
 
@@ -99,11 +99,20 @@ func Handshake(conn net.Conn, log *log.Logger) {
 		res.ProtoMinor = req.ProtoMinor
 	}
 
+	if req.Host == "" {
+
+		log.Print("WebSocket: 用户请求 Request.Header Host 字段 不存在, 缺失\n")
+
+		res.StatusCode = 400
+
+		goto fail
+	}
+
 	//除错: 协议升级
 
 	if k := req.Header.Get("Connection"); !(strings.ToLower(k) == "upgrade") {
 
-		log.Print("WebSocket: 用户请求 Request.Header 不规范, Connection 未使用 upgrade (不区分大小写的ASCII值)\n")
+		log.Print("WebSocket: 用户请求 Request.Header Connection 字段 不规范, 协议升级失败\n")
 
 		res.StatusCode = 400
 
@@ -112,7 +121,7 @@ func Handshake(conn net.Conn, log *log.Logger) {
 
 	if k := req.Header.Get("Upgrade"); !(strings.ToLower(k) == "websocket") {
 
-		log.Print("WebSocket: 用户请求 Request.Header 不规范, Upgrade 未使用 websocket (不区分大小写的ASCII值)\n")
+		log.Print("WebSocket: 用户请求 Request.Header Upgrade 字段 不规范, 协议升级失败\n")
 
 		res.StatusCode = 400
 
@@ -123,7 +132,7 @@ func Handshake(conn net.Conn, log *log.Logger) {
 
 	if k := strings.Join(req.Header["Sec-WebSocket-Version"], ","); !(strings.Contains(k, "13")) {
 
-		log.Print("WebSocket: 用户请求 Request.Header 不规范, Sec-WebSocket-Version 未包含 13\n")
+		log.Print("WebSocket: 用户请求 Request.Header Sec-WebSocket-Version 字段 不规范, 版本错误\n")
 
 		res.StatusCode = 400
 
@@ -138,7 +147,7 @@ func Handshake(conn net.Conn, log *log.Logger) {
 
 	if k := req.Header.Get("Sec-WebSocket-Key"); k == "" {
 
-		log.Print("WebSocket: 用户请求 Request.Header 不规范, Sec-WebSocket-Key 缺失\n")
+		log.Print("WebSocket: 用户请求 Request.Header Sec-WebSocket-Key 字段 不存在, 缺失\n")
 
 		res.StatusCode = 400
 
@@ -159,6 +168,24 @@ func Handshake(conn net.Conn, log *log.Logger) {
 		k = base64.StdEncoding.EncodeToString(h.Sum(nil))
 
 		res.Header.Set("Sec-WebSocket-Accept", k)
+	}
+
+	//可选字段, 不存在说明可能不是来自浏览器的访问
+
+	if req.Header.Get("Origin") == "" {
+
+		log.Print("WebSocket: 用户请求 Request.Header Origin 字段 不存在, 可能不是来自浏览器的访问\n")
+
+	}
+
+	//可选字段, 子协议
+
+	if k := req.Header.Get("Sec-WebSocket-Protocol"); k != "" {
+	}
+
+	//可选字段, 扩展
+
+	if k := req.Header.Get("Sec-WebSocket-Extensions"); k != "" {
 	}
 
 fail:
