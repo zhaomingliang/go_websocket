@@ -121,7 +121,7 @@ func Handshake(conn net.Conn, log *log.Logger) {
 
 	//除错: WebSocket (版本 >= 13)
 
-	if k := strings.Join(req.Header["Sec-WebSocket-Version"], ""); !(strings.Contains(k, "13")) {
+	if k := strings.Join(req.Header["Sec-WebSocket-Version"], ","); !(strings.Contains(k, "13")) {
 
 		log.Print("WebSocket: 用户请求 Request.Header 不规范, Sec-WebSocket-Version 未包含 13\n")
 
