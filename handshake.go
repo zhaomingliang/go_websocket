@@ -13,8 +13,6 @@ import (
 	"strings"
 )
 
-var WSErrOR = errors.New("websocket error: index out of range(0 - 127)")
-
 type Frame struct {
 	fin     byte
 	rsv1    byte
@@ -34,30 +32,64 @@ type Service struct {
 	Log *log.Logger
 }
 
-func (sv *Service) Connect(conn net.Conn) {
+func (sv *Service) Handshake(conn net.Conn, log *log.Logger) {
 
 	var res http.Response
+
+	log.Printf("%s 开始握手\n", conn.RemoteAddr())
+
+	//默认回复
+
+	res.StatusCode = 101
+
+	res.ProtoMajor = 1
+	res.ProtoMinor = 1
+
+	res.Header.Set("Connection", "Upgrade")
+
+	res.Header.Set("Upgrade", "websocket")
+
+	res.Header.Set("Sec-WebSocket-Version", "13")
+
+	//读取客户端请求
 
 	var req *http.Request
 
 	var er error
 
-	sv.Log.Printf("%s 开始握手\n", conn.RemoteAddr())
-
-	// 客户端握手请求的除错, 对于违反规则的请求, 关闭链接, 记录错误, 返回 http.Response 告知出错
-
 	if req, er = http.ReadRequest(bufio.NewReader(conn)); er != nil {
 
-		sv.Log.Println(er)
+		log.Println(er)
 
 		goto fail
 	}
 
-	// HTTP 版本 应 >= 1.1
+	//握手请求的除错
 
-	if !(req.ProtoMajor >= 1 && req.ProtoMinor >= 1) {
+	//除错: URL协议 ws(80) 或 wss(443)
 
-		sv.Log.Printf("WebSocket: 请求的HTTP版本低于 1.1, 为 %d.%d\n", req.ProtoMajor, req.ProtoMinor)
+	switch strings.ToLower(req.URL.Scheme) {
+
+	case "ws":
+
+	case "wss":
+
+	default:
+
+		log.Printf("WebSocket: URI 协议名称不规范, 未使用 ws 或 wss (不区分大小写的ASCII值), 为 %s\n", []byte(req.URL.Scheme)[:10])
+
+		res.StatusCode = 400
+
+		goto fail
+	}
+
+	//除错: HTTP (版本 >= 1.1)
+
+	if !req.ProtoAtLeast(1, 1) {
+
+		log.Printf("WebSocket: 请求的HTTP版本低于 1.1, 为 %d.%d\n", req.ProtoMajor, req.ProtoMinor)
+
+		res.StatusCode = 400
 
 		goto fail
 
@@ -68,46 +100,33 @@ func (sv *Service) Connect(conn net.Conn) {
 		res.ProtoMinor = req.ProtoMinor
 	}
 
-	// URL 包含的协议 应为 ws 或者 wss
-
-	switch strings.ToLower(req.URL.Scheme) {
-
-	case "ws":
-
-	case "wss":
-
-	default:
-
-		sv.Log.Printf("WebSocket: URI 协议名称不规范, 未使用 ws 或 wss (不区分大小写的ASCII值), 为 ％s\n", []byte(req.URL.Scheme)[:10])
-
-		goto fail
-	}
+	//除错: 协议升级
 
 	if k := req.Header.Get("Connection"); !(strings.ToLower(k) == "upgrade") {
 
-		sv.Log.Print("WebSocket: 用户请求 Request.Header 不规范, Connection 未使用 upgrade (不区分大小写的ASCII值)\n")
+		log.Print("WebSocket: 用户请求 Request.Header 不规范, Connection 未使用 upgrade (不区分大小写的ASCII值)\n")
+
+		res.StatusCode = 400
 
 		goto fail
-
-	} else {
-
-		res.Header.Set("Connection", "Upgrade")
 	}
 
 	if k := req.Header.Get("Upgrade"); !(strings.ToLower(k) == "websocket") {
 
-		sv.Log.Print("WebSocket: 用户请求 Request.Header 不规范, Upgrade 未使用 websocket (不区分大小写的ASCII值)\n")
+		log.Print("WebSocket: 用户请求 Request.Header 不规范, Upgrade 未使用 websocket (不区分大小写的ASCII值)\n")
+
+		res.StatusCode = 400
 
 		goto fail
-
-	} else {
-
-		res.Header.Set("Upgrade", "websocket")
 	}
 
-	if k := req.Header.Get("Sec-WebSocket-Version"); !(strings.Contains(k, "13")) {
+	//除错: WebSocket (版本 >= 13)
 
-		sv.Log.Print("WebSocket: 用户请求 Request.Header 不规范, Sec-WebSocket-Version 未包含 13\n")
+	if k := strings.Join(req.Header["Sec-WebSocket-Version"], ""); !(strings.Contains(k, "13")) {
+
+		log.Print("WebSocket: 用户请求 Request.Header 不规范, Sec-WebSocket-Version 未包含 13\n")
+
+		res.StatusCode = 400
 
 		goto fail
 
@@ -116,9 +135,13 @@ func (sv *Service) Connect(conn net.Conn) {
 		res.Header.Set("Sec-WebSocket-Version", k)
 	}
 
+	//除错: Key是否缺失
+
 	if k := req.Header.Get("Sec-WebSocket-Key"); k == "" {
 
-		sv.Log.Print("WebSocket: 用户请求 Request.Header 不规范, Sec-WebSocket-Key 缺失\n")
+		log.Print("WebSocket: 用户请求 Request.Header 不规范, Sec-WebSocket-Key 缺失\n")
+
+		res.StatusCode = 400
 
 		goto fail
 
@@ -139,22 +162,20 @@ func (sv *Service) Connect(conn net.Conn) {
 		res.Header.Set("Sec-WebSocket-Accept", k)
 	}
 
+fail:
+
 	if er = res.Write(conn); er != nil && er != io.EOF {
 
-		sv.Log.Println(er)
+		log.Println(er)
 
-		goto fail
+	} else if res.StatusCode == 101 {
 
-	} else {
-
-		sv.Log.Printf("%s 握手成功\n", conn.RemoteAddr())
+		log.Printf("%s 握手成功\n", conn.RemoteAddr())
 
 		return
 	}
 
-fail:
-
-	sv.Log.Printf("%s 握手失败, 关闭连接\n", conn.RemoteAddr())
+	log.Printf("%s 握手失败, 关闭连接\n", conn.RemoteAddr())
 
 	conn.Close()
 }
